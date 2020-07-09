@@ -54,5 +54,6 @@ nextFigure :: Level -> (Figure, Level)
 nextFigure (Level randomGen) =
   (randomFigure, Level newRandomGen)
   where
-  (randomIndex, newRandomGen) = randomR (0, length figuresToSelectFrom) randomGen
+  len = length figuresToSelectFrom
+  (randomIndex, newRandomGen) = randomR (0, len - 1) randomGen
   randomFigure = figuresToSelectFrom !! randomIndex
