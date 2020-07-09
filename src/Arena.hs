@@ -9,6 +9,7 @@ module Arena
   , getBricksOnTheFloor
   , hasFullRows
   , findFullRowsIndices
+  , removeFullRows
   ) where
 
 import Figure

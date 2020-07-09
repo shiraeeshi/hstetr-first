@@ -23,8 +23,10 @@ dependencies:
 - base >= 4.7 && < 5
 - random
 - ansi-terminal >= 0.10.3
+- timers >= 0.2.0.3
+- suspend >= 0.2.0.0
+- async
   #- timers >= 0.2.0.3
-  #- timers
 
 library:
   source-dirs: src
