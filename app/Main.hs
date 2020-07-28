@@ -100,7 +100,7 @@ handleTetrisCommand (TetrisStateRunning arena level chan timer) CmdPauseOrResume
   stopTimer timer
   return $ TetrisStatePaused arena level chan
 handleTetrisCommand (TetrisStatePaused arena level chan) CmdPauseOrResume = do
-  timer <- repeatedTimer (timerTick chan) (msDelay 200)
+  timer <- repeatedTimer (timerTick chan) (msDelay 300)
   printArena 20 20 arena
   return $ TetrisStateRunning arena level chan timer
 
