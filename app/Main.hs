@@ -36,14 +36,19 @@ main = do
     arenaWithLevel = TetrisStateRunning arena level chan timer
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
-  commands <- getChanContents chan
   printArena 20 20 arena
-  concurrently (foldM handleTetrisCommand arenaWithLevel commands) (keys2commands chan)
+  concurrently (keepHandlingTetrisCommands arenaWithLevel chan) (keys2commands chan)
   return ()
 
 timerTick :: Chan TetrisCommand -> IO ()
 timerTick chan = do
   writeChan chan CmdTick
+
+keepHandlingTetrisCommands :: TetrisState -> Chan TetrisCommand -> IO ()
+keepHandlingTetrisCommands tetrisState chan = do
+  cmd <- readChan chan
+  newState <- handleTetrisCommand tetrisState cmd
+  keepHandlingTetrisCommands newState chan
 
 handleTetrisCommand :: TetrisState -> TetrisCommand -> IO TetrisState
 handleTetrisCommand tetrisState CmdRotate = do
