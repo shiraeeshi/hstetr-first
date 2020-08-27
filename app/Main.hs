@@ -12,9 +12,11 @@ import Control.Concurrent.Timer
 import Control.Concurrent.Chan
 import Control.Concurrent.Suspend.Lifted (msDelay)
 
-data TetrisCommand = CmdRotate | CmdDescend | CmdRight | CmdLeft | CmdTick | CmdPauseOrResume
+data TetrisCommand = CmdRotate | CmdDescend | CmdRight | CmdLeft | CmdTick | CmdPauseOrResume | CmdQuit
 
-data TetrisState = TetrisStateRunning Arena Level (Chan TetrisCommand) TimerIO | TetrisStatePaused Arena Level (Chan TetrisCommand)
+data TetrisState = TetrisStateRunning Arena Level (Chan TetrisCommand) TimerIO
+                 | TetrisStatePaused Arena Level (Chan TetrisCommand)
+                 | TetrisStateGameOver
 
 getArenaFromState :: TetrisState -> Arena
 getArenaFromState (TetrisStateRunning arena _ _ _) = arena
@@ -37,7 +39,7 @@ main = do
   hSetBuffering stdin NoBuffering
   hSetEcho stdin False
   printArena 20 20 arena
-  concurrently (keepHandlingTetrisCommands arenaWithLevel chan) (keys2commands chan)
+  race (keepHandlingTetrisCommands arenaWithLevel chan) (keys2commands chan)
   return ()
 
 timerTick :: Chan TetrisCommand -> IO ()
@@ -48,7 +50,10 @@ keepHandlingTetrisCommands :: TetrisState -> Chan TetrisCommand -> IO ()
 keepHandlingTetrisCommands tetrisState chan = do
   cmd <- readChan chan
   newState <- handleTetrisCommand tetrisState cmd
-  keepHandlingTetrisCommands newState chan
+  case newState of
+    TetrisStateGameOver -> do
+      putStrLn "Game Over"
+    _ -> keepHandlingTetrisCommands newState chan
 
 handleTetrisCommand :: TetrisState -> TetrisCommand -> IO TetrisState
 handleTetrisCommand tetrisState CmdRotate = do
@@ -75,6 +80,9 @@ handleTetrisCommand tetrisState CmdLeft = do
     newArena = moveCurrentFigureLeft arena
   printArena 20 20 newArena
   return $ stateWithNewArena tetrisState newArena
+handleTetrisCommand tetrisState CmdQuit = do
+  putStrLn "Goodbye"
+  return TetrisStateGameOver
 handleTetrisCommand (TetrisStateRunning arena level chan timer) CmdTick = do
   let (newArena, descended) = descendCurrentFigure arena
   if descended
@@ -100,7 +108,7 @@ handleTetrisCommand (TetrisStateRunning arena level chan timer) CmdTick = do
           return $ TetrisStateRunning newFigureArena newLevel chan timer
     else do
       stopTimer timer
-      return $ TetrisStateRunning newFigureArena newLevel chan timer
+      return $ TetrisStateGameOver
 handleTetrisCommand (TetrisStateRunning arena level chan timer) CmdPauseOrResume = do
   stopTimer timer
   return $ TetrisStatePaused arena level chan
@@ -128,6 +136,9 @@ keys2commands chan = do
         keys2commands chan
       "\n" -> do -- enter
         writeChan chan CmdPauseOrResume
+        keys2commands chan
+      "q" -> do
+        writeChan chan CmdQuit
         keys2commands chan
       _ -> return ()
 
